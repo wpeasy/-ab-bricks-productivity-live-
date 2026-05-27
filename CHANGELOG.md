@@ -2,6 +2,11 @@
 
 All notable changes to BRXProd Live are documented in this file.
 
+## 0.0.3 — 2026-05-27
+
+### Fixes
+- **Updater never reached GitHub.** `fetch_latest_release()` short-circuited and returned `null` before making any HTTP request, because `get_site_transient()` returns `false` for both "missing" and "stored false", and the negative-cache helper unconditionally treated `false` as a recent failure. As a result every "Check for updates" call (and every WP auto-update poll) surfaced "Could not reach GitHub" regardless of actual network connectivity. The negative cache now lives in its own transient (`abpl_github_release_negative`), so missing-cache and recent-failure are properly distinguishable.
+
 ## 0.0.2 — 2026-05-27
 
 ### New features

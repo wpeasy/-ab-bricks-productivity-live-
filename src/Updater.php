@@ -36,6 +36,7 @@ defined('ABSPATH') || exit;
 final class Updater
 {
     private const CACHE_KEY     = 'abpl_github_latest_release';
+    private const NEG_CACHE_KEY = 'abpl_github_release_negative';
     private const CACHE_TTL     = 12 * HOUR_IN_SECONDS;
     private const NEG_CACHE_TTL = 15 * MINUTE_IN_SECONDS;
 
@@ -53,6 +54,7 @@ final class Updater
     public static function clear_cache(): void
     {
         delete_site_transient(self::CACHE_KEY);
+        delete_site_transient(self::NEG_CACHE_KEY);
         delete_site_transient('update_plugins');
     }
 
@@ -251,8 +253,10 @@ final class Updater
         if (is_array($cached)) {
             return $cached;
         }
-        // `false` (vs null) signals a recent negative cache — don't retry yet.
-        if ($cached === false && self::has_negative_cache()) {
+        // Negative-cache lives in its own transient because get_site_transient
+        // returns false for both "missing" and "stored false", so we can't
+        // tell them apart on a single key.
+        if (get_site_transient(self::NEG_CACHE_KEY) !== false) {
             return null;
         }
 
@@ -342,17 +346,8 @@ final class Updater
 
     private static function store_negative_cache(): void
     {
-        set_site_transient(self::CACHE_KEY, false, self::NEG_CACHE_TTL);
-    }
-
-    private static function has_negative_cache(): bool
-    {
-        // get_site_transient already returns false when the transient is
-        // unset OR expired, so this helper exists purely to make the
-        // distinction at the call site readable. The fact that we got
-        // `false` (not array) means whichever branch we're in, retrying
-        // immediately gains nothing within NEG_CACHE_TTL.
-        return true;
+        delete_site_transient(self::CACHE_KEY);
+        set_site_transient(self::NEG_CACHE_KEY, 1, self::NEG_CACHE_TTL);
     }
 
     /**
