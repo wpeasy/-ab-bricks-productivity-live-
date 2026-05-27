@@ -1,0 +1,24 @@
+{
+    "name": "alanblair/ab-bricks-productivity-live",
+    "description": "Runtime registrar for Bricks Productivity code snippets — toggle frontend snippets on/off from the WP admin.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Alan Blair",
+            "email": "alan@alanblair.co"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AB\\BricksProductivityLive\\": "src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

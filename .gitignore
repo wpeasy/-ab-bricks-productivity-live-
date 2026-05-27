@@ -1,0 +1,14 @@
+/vendor/
+/node_modules/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/sftp.json
+
+# Claude
+.claude/worktrees/
+nul
