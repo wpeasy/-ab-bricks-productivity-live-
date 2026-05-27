@@ -28,7 +28,18 @@ final class Menu
             self::MENU_SLUG,
             [SettingsPage::class, 'render'],
             'dashicons-shortcode',
-            81
+            self::menu_position()
         );
+    }
+
+    /**
+     * Pick a menu position. When the parent plugin is active its top-level
+     * menu sits at 3.1; placing ours at 3.2 makes it the next item in the
+     * sidebar. When the parent isn't active we fall back to a high default
+     * so we don't shoulder our way next to unrelated admin menus.
+     */
+    private static function menu_position(): float
+    {
+        return class_exists(\AB\BricksProductivity\Admin\Menu::class) ? 3.2 : 81.0;
     }
 }

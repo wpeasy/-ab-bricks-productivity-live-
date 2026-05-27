@@ -15,15 +15,22 @@ final class Plugin
 {
     public static function init(): void
     {
-        // Admin UI — registered only when serving the admin (saves a few
-        // function calls per frontend request).
         if (is_admin()) {
             Admin\Menu::init();
-            Admin\SettingsPage::register_save_handler();
         }
+
+        // REST routes register on rest_api_init, which only fires for REST
+        // requests — cheap to wire unconditionally and required for the
+        // admin UI's auto-save toggles to work.
+        Admin\RestController::init();
 
         // Snippet loader — always on. Internally no-ops if the parent's
         // snippet files don't exist on disk.
         SnippetLoader::init();
+
+        // GitHub-releases self-updater. Hooks register cheaply on every
+        // request; the actual GitHub API call only happens when WP refreshes
+        // its update_plugins transient (~12h or on demand).
+        Updater::init();
     }
 }

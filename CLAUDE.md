@@ -108,6 +108,35 @@ For JS / CSS, the safety net is the same prominent banner — "verify before ena
 
 When authoring a new PHP snippet for `assets/snippets/`, prefer wrapping its work in a uniquely-named class or function (rather than an anonymous closure) wherever practical. That gives the duplicate-detection layer something concrete to check. Snippets that legitimately only register filter closures should be flagged in their docblock so the live plugin can show a stronger per-row warning for those specifically (a future v0.0.2 enhancement — for v0.0.1 the page-level banner applies to all).
 
+## Admin UI: REST + Auto-save
+
+The settings page does NOT post a form. Each toggle change fires a fetch to `POST /wp-json/abpl/v1/toggle` (`Admin\RestController::handle_toggle`). Auth uses the standard `wp_rest` nonce + `current_user_can('manage_options')`. The REST controller persists the new state via `SnippetLoader::set_enabled()`, then — for PHP snippets being turned ON — runs `probe_frontend()`, a `wp_remote_get(home_url('/?abpl_probe=...'))` with anonymous cookies and a 10s timeout.
+
+Probe outcomes the client must handle:
+- HTTP 5xx OR body contains `Fatal error` / `Parse error` / "There has been a critical error…" → the server reverts the option and returns `{enabled:false, reverted:true, message}`; the JS flips the switch back.
+- WP_Error from the loopback itself → keep enabled, return `{warning}` ("could not verify, test manually").
+- Otherwise → success.
+
+The probe only fires when ENABLING a PHP snippet. Disable and JS/CSS toggles skip the probe (they can't fatal the server).
+
+A second endpoint, `POST /wp-json/abpl/v1/check-updates`, force-clears the GitHub release cache + WP's `update_plugins` transient and returns a UI-friendly summary used by the "Check for updates" button on the settings page.
+
+## Self-Updater (GitHub Releases)
+
+`src/Updater.php` plugs WordPress's update machinery into GitHub Releases. Hooks:
+
+- `pre_set_site_transient_update_plugins` — inject our update entry when a newer tag exists.
+- `plugins_api` — populate the "View details" modal with the release body (escaped + `wpautop`'d).
+- `upgrader_source_selection` — rename `{repo}-{tag}/` to the canonical plugin slug after extraction.
+
+Release lookup hits `api.github.com/repos/{ABPL_GITHUB_OWNER}/{ABPL_GITHUB_REPO}/releases/latest`, cached for 12h positive / 15min negative. The updater prefers an uploaded asset whose name matches `{slug}.zip` OR `{slug}-{anything}.zip` (the latter is what `create-plugin-zip.ps1` produces). Falls back to GitHub's auto-generated source archive — which means a release without an attached asset will install WITHOUT `vendor/` and the plugin will silently no-op due to the `class_exists` guard in the bootstrap.
+
+**Release procedure** (don't skip step 2 or auto-update will ship a broken plugin):
+1. Bump `Version:` header and `ABPL_VERSION` constant in `ab-bricks-productivity-live.php`.
+2. Run `.\create-plugin-zip.ps1` — produces `plugin/{slug}-{version}.zip` containing `vendor/`.
+3. Commit, push, tag.
+4. `gh release create {version} plugin/{slug}-{version}.zip --latest`.
+
 ## Required Reading
 
 | File | Purpose |
