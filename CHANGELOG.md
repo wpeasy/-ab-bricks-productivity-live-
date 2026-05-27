@@ -2,6 +2,11 @@
 
 All notable changes to BRXProd Live are documented in this file.
 
+## 0.0.5 — 2026-05-27
+
+### Build
+- **Release script now refreshes `vendor/` before zipping.** `create-plugin-zip.ps1` runs `composer install --no-dev --optimize-autoloader` as its first step. Without this, a fresh `git clone` followed by a zip run would package an empty (or stale dev) vendor directory, and the plugin would silently fail to activate because the PSR-4 autoloader never registers. Composer must be on `PATH` — the script aborts otherwise.
+
 ## 0.0.4 — 2026-05-27
 
 Version-bump only. Cut to verify the 0.0.3 updater fix end-to-end: an installed 0.0.3 should detect 0.0.4 as available via the "Check for updates" button and via WordPress's normal update poll.

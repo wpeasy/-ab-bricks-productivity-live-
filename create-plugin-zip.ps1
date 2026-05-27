@@ -1,11 +1,44 @@
-# Create WordPress Plugin ZIP with UNIX-compatible paths
-# This script creates a production-ready ZIP file for WordPress plugin distribution
+# Create WordPress Plugin ZIP with UNIX-compatible paths.
+#
+# Adapted from the parent plugin's (ab-bricks-productivity) script. BRXProd
+# Live is pure PHP with a Composer autoloader — no Vite, no Svelte, no
+# node_modules — so the file set is much smaller. The CRITICAL difference
+# vs the parent is the composer-install step BEFORE zipping: /vendor/ is
+# gitignored, so a fresh git clone has no autoloader and the whole plugin
+# silently fails on activation. This script regenerates a production
+# vendor folder every run.
 
 $ErrorActionPreference = "Stop"
 
 # Get plugin info from current directory
 $pluginDir = Get-Location
 $pluginName = Split-Path -Leaf $pluginDir
+
+# ---------------------------------------------------------------------
+# Step 1 — refresh /vendor/ with production-only dependencies + an
+# optimized autoload. Without this, the ZIP would either include a stale
+# dev vendor or no vendor at all (when run on a fresh clone). Skipping
+# this is the #1 cause of "plugin appears active but does nothing" — the
+# class autoloader never registers, so SnippetLoader / RestController /
+# the admin page are all unreachable.
+# ---------------------------------------------------------------------
+
+$composer = Get-Command composer -ErrorAction SilentlyContinue
+if (-not $composer) {
+    Write-Host "ERROR: 'composer' not found on PATH. Install Composer and retry." -ForegroundColor Red
+    exit 1
+}
+
+if (Test-Path (Join-Path $pluginDir "composer.json")) {
+    Write-Host "Running composer install --no-dev --optimize-autoloader..." -ForegroundColor Cyan
+    & composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | ForEach-Object { Write-Host "  $_" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: composer install failed (exit $LASTEXITCODE). Aborting ZIP." -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "No composer.json found — skipping vendor refresh." -ForegroundColor Yellow
+}
 
 # Get version from main plugin file
 $mainPluginFile = Get-ChildItem -Path $pluginDir -Filter "*.php" | Where-Object {
@@ -39,28 +72,20 @@ $zipPath = Join-Path $outputDir $zipName
 
 Write-Host "Creating $zipName..." -ForegroundColor Cyan
 
-# Patterns to exclude
+# Patterns to exclude. CRITICALLY: /vendor/ is NOT excluded — it's the
+# whole reason for the composer install step above.
 $excludePatterns = @(
-    "^\.",               # Root files/folders starting with '.'
-    "(^|[\\/])\.",       # Hidden files/folders anywhere in path (covers .git, .claude, .vscode, .gitignore)
-    "^node_modules",
-    "^src-",             # All folders starting with 'src-' (covers src-svelte)
-    "(^|[\\/])svelte-",  # All folders starting with 'svelte-' anywhere in path (covers lib/wpea/svelte-*)
-    "^plugin[\\/]",
-    "^marketing-docs[\\/]",  # Marketing materials folder
-    "\.md$",             # All markdown files (covers CLAUDE.md, CHANGELOG.md, CHANGELOG_USER.md, CHANGELOG_VERSION.md, etc.)
-    "^CHANGELOG_(USER|VERSION)\.html$",  # User-facing changelog HTML companions — meant for external web-page consumption, not the plugin ZIP
+    "^\.",                                   # Root dot-files / dot-folders
+    "(^|[\\/])\.",                           # Hidden files/folders anywhere (.git, .claude, .vscode, .gitignore)
+    "^plugin[\\/]",                          # ZIP output dir
+    "\.md$",                                 # All markdown docs (CLAUDE.md, README.md, CODE_STANDARDS.md, CHANGELOG.md)
+    "^CHANGELOG_(USER|VERSION)\.html$",      # User-facing changelog HTML companions
     "\.log$",
-    "^vite\.config",
-    "^tsconfig",
-    "^svelte\.config",
-    "^package\.json$",
-    "^package-lock\.json$",
-    "^composer\.json$",
+    "^composer\.json$",                      # composer.json/lock not needed at runtime
     "^composer\.lock$",
     "^phpcs\.xml",
     "^phpunit\.xml",
-    "^create-plugin-zip\.ps1$",
+    "^create-plugin-zip\.ps1$",              # This script itself
     "^(con|prn|aux|nul|com[0-9]|lpt[0-9])$"  # Windows reserved device names
 )
 

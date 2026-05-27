@@ -133,7 +133,7 @@ Release lookup hits `api.github.com/repos/{ABPL_GITHUB_OWNER}/{ABPL_GITHUB_REPO}
 
 **Release procedure** (don't skip step 2 or auto-update will ship a broken plugin):
 1. Bump `Version:` header and `ABPL_VERSION` constant in `ab-bricks-productivity-live.php`.
-2. Run `.\create-plugin-zip.ps1` — produces `plugin/{slug}-{version}.zip` containing `vendor/`.
+2. Run `.\create-plugin-zip.ps1` — runs `composer install --no-dev --optimize-autoloader` first (vendor/ is gitignored so a fresh clone has no autoloader), then produces `plugin/{slug}-{version}.zip` containing `vendor/`. Composer must be on PATH.
 3. Commit, push, tag.
 4. `gh release create {version} plugin/{slug}-{version}.zip --latest`.
 

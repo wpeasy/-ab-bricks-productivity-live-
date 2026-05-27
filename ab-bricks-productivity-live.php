@@ -3,7 +3,7 @@
  * Plugin Name:       BRXProd Live
  * Plugin URI:        https://brxprod.com
  * Description:       Runtime registrar for Bricks Productivity code snippets — toggle frontend snippets on/off from the WP admin instead of pasting them by hand.
- * Version:           0.0.4
+ * Version:           0.0.5
  * Requires at least: 6.5
  * Requires PHP:      8.0
  * Author:            Alan Blair <alan@alanblair.co>
@@ -23,7 +23,7 @@ declare(strict_types=1);
 defined('ABSPATH') || exit;
 
 // Plugin constants
-define('ABPL_VERSION', '0.0.4');
+define('ABPL_VERSION', '0.0.5');
 define('ABPL_PLUGIN_FILE', __FILE__);
 define('ABPL_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('ABPL_PLUGIN_URL', plugin_dir_url(__FILE__));
