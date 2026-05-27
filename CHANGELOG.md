@@ -2,6 +2,10 @@
 
 All notable changes to BRXProd Live are documented in this file.
 
+## 0.0.4 — 2026-05-27
+
+Version-bump only. Cut to verify the 0.0.3 updater fix end-to-end: an installed 0.0.3 should detect 0.0.4 as available via the "Check for updates" button and via WordPress's normal update poll.
+
 ## 0.0.3 — 2026-05-27
 
 ### Fixes
